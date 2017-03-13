@@ -1,17 +1,23 @@
 # -*- coding: utf-8 -*-
 import scrapy
 import re
+import time
 def striphtml(data):
     p = re.compile(r'<.*?>')
     return p.sub('', data)
 
 class SFLSGZHSpider(scrapy.Spider):
     name = "sflsgzh"
-
+    
     def start_requests(self):
-        url = 'http://weixin.sogou.com/weixin?type=1&query=sfls&ie=utf8'
-        yield scrapy.Request(url, self.parse)
+        start_urls = [
+            'http://weixin.sogou.com/weixin?type=1&query=上外附中&ie=utf8',
+            'http://weixin.sogou.com/weixin?type=1&query=sfls&ie=utf8'
+        ]
 
+        for url in start_urls:
+            yield scrapy.Request(url, self.parse)
+    
     def parse(self, response):
         for li in response.xpath('//ul[@class="news-list2"]/li'):
             url = li.xpath('div/div[1]/a/@href')
@@ -29,20 +35,19 @@ class SFLSGZHSpider(scrapy.Spider):
            
             qrcode = li.xpath('div/div[3]/span/img[1]/@src')
             jieshao = striphtml(li.xpath('dl[1]/dd').extract_first())
-            renzhen = li.xpath('dl[2]/dd/text()').extract_first()
+            latest = li.xpath('dl[2]/dd/span/text()').extract_first()
             yield {
                 'name': name,
                 'info': info,
                 'post_month': post_month,
                 'read_avg': read_avg,
-                'jieshao': jieshao    
+                'jieshao': jieshao,
+                'latest': latest,
+                'date': time.strftime("%Y-%m-%d",time.localtime())    
             }
-'''
         # continue for next page
         next_page = response.xpath('//a[@id="sogou_next"]/@href').extract_first()
         print next_page
         if next_page is not None:
             next_page = response.urljoin(next_page)
             yield scrapy.Request(next_page, self.parse)
-'''
-
